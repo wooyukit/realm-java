@@ -38,10 +38,12 @@
 #include "jni_util/java_class.hpp"
 #include "jni_util/java_exception_thrower.hpp"
 
+#include <iostream>
 
 using namespace realm;
 using namespace realm::_impl;
 using namespace realm::jni_util;
+using namespace std;
 
 static const char* c_table_name_exists_exception_msg = "Class already exists: '%1'.";
 
@@ -91,6 +93,13 @@ JNIEXPORT jlong JNICALL Java_io_realm_internal_OsSharedRealm_nativeGetSharedReal
         env->Throw(reinterpret_cast<jthrowable>(migration_needed_exception));
     }
     catch (InvalidSchemaVersionException& e) {
+        // An exception has been thrown in the migration block.
+        if (env->ExceptionCheck()) {
+            return reinterpret_cast<jlong>(nullptr);
+        }
+        // To match the old behaviour. Otherwise it will be converted to ISE in the CATCH_STD.
+        ThrowException(env, IllegalArgument, e.what());
+    } catch (exception& e){
         // An exception has been thrown in the migration block.
         if (env->ExceptionCheck()) {
             return reinterpret_cast<jlong>(nullptr);
